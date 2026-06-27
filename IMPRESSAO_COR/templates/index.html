@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classificador KNN - Impressao Cor</title>
+    <meta name="description" content="Sistema inteligente de classificacao de imagens para impressao colorida. Determina automaticamente a melhor maquina (APS ou TEX) para cada imagem.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="3"/>
+                        <path d="M16 18C16 18 20 14 24 14C28 14 32 18 32 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M14 26H34" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="20" cy="32" r="3" fill="currentColor"/>
+                        <circle cx="28" cy="32" r="3" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Classificador de Impressao</h1>
+                    <p class="subtitle">Analise inteligente por KNN</p>
+                </div>
+            </div>
+            <div class="status-badge" id="statusBadge">
+                <span class="status-dot"></span>
+                <span id="statusText">Verificando...</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Upload -->
+            <section class="upload-section" id="uploadSection">
+                <div class="dropzone" id="dropzone">
+                    <div class="dropzone-content">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 64 64" fill="none">
+                                <path d="M32 8L32 44" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                                <path d="M20 20L32 8L44 20" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M8 44V52C8 54.2091 9.79086 56 12 56H52C54.2091 56 56 54.2091 56 52V44" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h2 class="dropzone-title">Solte a imagem aqui</h2>
+                        <p class="dropzone-subtitle">ou clique para selecionar</p>
+                        <p class="dropzone-formats">TIF, TIFF, PNG, JPG, BMP, WebP</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp,.webp" hidden>
+                </div>
+            </section>
+
+            <!-- Loading -->
+            <section class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-card">
+                    <div class="spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <h3>Analisando imagem...</h3>
+                    <p>Extraindo features e classificando</p>
+                    <p class="loading-filename" id="loadingFilename"></p>
+                </div>
+            </section>
+
+            <!-- Resultado -->
+            <section class="result-section" id="resultSection" style="display: none;">
+
+                <!-- Preview + Classificacao -->
+                <div class="result-layout">
+                    <!-- Preview da imagem -->
+                    <div class="result-preview-card">
+                        <div class="preview-image-wrapper">
+                            <img id="resultPreviewImage" alt="Preview">
+                        </div>
+                        <div class="preview-info" id="previewInfo">
+                            <!-- Preenchido pelo JS -->
+                        </div>
+                    </div>
+
+                    <!-- Card de resultado -->
+                    <div class="result-card" id="resultCard">
+                        <div class="result-header">
+                            <div class="result-badge">
+                                <span class="result-machine" id="resultMachine"></span>
+                            </div>
+                            <div class="result-confidence-wrapper">
+                                <span class="confidence-label">Confianca</span>
+                                <span class="confidence-value" id="resultConfidence"></span>
+                            </div>
+                        </div>
+
+                        <div class="result-details">
+                            <h3>Probabilidades por Maquina</h3>
+                            <div class="prob-bars" id="probBars"></div>
+                        </div>
+
+                        <div class="result-meta">
+                            <div class="meta-item">
+                                <span class="meta-label">Tempo</span>
+                                <span class="meta-value" id="resultTime"></span>
+                            </div>
+                        </div>
+
+                        <button class="btn-new" id="btnNew">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Nova Classificacao
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Explicacao / Por que esta maquina -->
+                <div class="explanation-card" id="explanationCard">
+                    <h3 class="explanation-title">Por que esta maquina foi escolhida?</h3>
+                    <p class="explanation-summary" id="explanationSummary"></p>
+
+                    <div class="factors-grid" id="factorsGrid">
+                        <!-- Preenchido pelo JS -->
+                    </div>
+
+                    <!-- Tabela de cores dominantes -->
+                    <div class="colors-section" id="colorsSection">
+                        <h4 class="section-subtitle">Distribuicao de Cores</h4>
+                        <div class="color-bars" id="colorBars"></div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Erro -->
+            <section class="error-section" id="errorSection" style="display: none;">
+                <div class="error-card">
+                    <div class="error-icon">!</div>
+                    <h3 id="errorTitle">Erro</h3>
+                    <p id="errorMessage"></p>
+                    <button class="btn-new" id="btnRetry">Tentar Novamente</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Historico -->
+        <section class="history-section" id="historySection" style="display: none;">
+            <h3 class="history-title">Historico de Classificacoes</h3>
+            <div class="history-list" id="historyList"></div>
+        </section>
+
+        <footer class="footer">
+            <p>Classificador KNN - scikit-learn + OpenCV</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
