@@ -19,3 +19,7 @@ notes_state.json
 venv/
 env/
 ENV/
+
+# Generated config files
+FERRAMENTAS/core/config.json
+FERRAMENTAS/configuracoes_cortador.json

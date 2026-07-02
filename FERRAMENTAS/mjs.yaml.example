@@ -1,0 +1,53 @@
+# ============================================================
+# MJS — Configuracao
+# ============================================================
+# Copie este arquivo como mjs.yaml e ajuste os caminhos
+
+# Caminhos principais
+paths:
+  raiz: "Z:\\"                          # Pasta raiz (servidor)
+
+# Vigilantes — monitoram pastas e processam automaticamente
+vigilantes:
+  conf:
+    ativo: true
+    pasta: "Z:\\CONF"                   # Pasta dos TIFFs pra processar
+    ext: ".tif, .tiff"                  # Extensoes a vigiar
+    acao: "conf"                        # Acao ao detectar arquivo novo
+
+  bolsinhas:
+    ativo: true
+    pasta: "Z:\\BOLSINHAS\\PARA FAZER"  # Pasta dos TIFFs pra gerar miniatura
+    ext: ".tif, .tiff"
+    acao: "bolsinhas"
+
+# Tarefas diarias
+diario:
+  criar_pastas: true                    # Criar estrutura de pastas todo dia
+  horario: "07:30"                      # Horario para criar
+  raiz: "Z:\\"                          # Onde criar
+  subpastas:
+    - "BOLSINHAS"
+    - "BOLSINHAS/PARA FAZER"
+    - "PAINEL_CUT"
+    - "CONF"
+    - "APS"
+    - "TEX"
+
+# Servidor do bloco de notas compartilhado
+notepad:
+  ativo: true
+  host: "0.0.0.0"
+  porta: 8765
+
+# Configuracoes dos processamentos
+processamento:
+  conf:
+    dpi_fallback: 300
+    largura_alvo_cm: 155
+    padding_cm: 1.0
+    contorno_px: 1
+
+  bolsinhas:
+    escala: 0.10                         # 10% do tamanho original
+    qualidade: 85                        # Qualidade JPEG

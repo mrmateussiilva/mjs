@@ -1,0 +1,21 @@
+# ============================================================
+# MJS — FERRAMENTAS
+# Dependencias obrigatorias
+# ============================================================
+Pillow>=10.0.0
+customtkinter>=5.2.0
+websockets>=12.0
+pyyaml>=6.0
+
+# ============================================================
+# Opcionais — melhora a experiencia
+# ============================================================
+
+# Monitoramento de arquivos em tempo real (sem isso, usa polling)
+watchdog>=4.0.0
+
+# Notificacao nativa Windows (falha ao instalar no Linux)
+win10toast>=0.9; sys_platform == 'win32'
+
+# Fallback multiplataforma para notificacoes
+plyer>=2.1.0

@@ -13,24 +13,22 @@ import time
 import json
 import threading
 import subprocess
+import shutil
 import datetime
 from pathlib import Path
 
-# ── Bibliotecas para Notificação ──────────────────────────────────────────────
-def enviar_notificacao(titulo: str, mensagem: str):
-    try:
-        from win10toast import ToastNotifier
-        ToastNotifier().show_toast(titulo, mensagem, duration=6, threaded=True)
-    except Exception:
-        pass
-    try:
-        from plyer import notification
-        notification.notify(title=titulo, message=mensagem, timeout=6)
-    except Exception:
-        pass
+from PIL import Image
+
+from core.utils import notify
+from core.bolsinhas import generate_thumbnail
+from core.conf import process_tiff, FileLog
+
+Image.MAX_IMAGE_PIXELS = None
 
 # ── Caminhos ──────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 REGRAS_MD = ROOT / "regras.md"
 LOG_FILE = ROOT / "agent_log.txt"
 
@@ -285,41 +283,30 @@ class MjsAgent:
         try:
             sucesso = False
             if acao == "bolsinhas":
-                # Executa a lógica de redimensionamento diretamente
                 if arquivo_disparador and arquivo_disparador.exists():
-                    saida = arquivo_disparador.parent / ("bolsinha_" + arquivo_disparador.stem + ".jpeg")
-                    # Espera estabilizar
                     self._esperar_estabilizar(arquivo_disparador)
-                    with Image.open(arquivo_disparador) as img:
-                        w, h = img.size
-                        nw, nh = max(1, round(w*.10)), max(1, round(h*.10))
-                        img.convert("RGB").resize((nw, nh), Image.LANCZOS).save(saida, "JPEG", quality=85, optimize=True)
+                    generate_thumbnail(arquivo_disparador)
                     arquivo_disparador.unlink()
-                    agent_log(f"✅ Bolsinha gerada com sucesso para: {arquivo_disparador.name}")
+                    agent_log(f"✅ Bolsinha gerada para: {arquivo_disparador.name}")
                     sucesso = True
                     
             elif acao == "conf":
-                # Executa processamento conf
                 if arquivo_disparador and arquivo_disparador.exists():
                     self._esperar_estabilizar(arquivo_disparador)
-                    sys.path.insert(0, str(ROOT))
-                    from conf import process_tiff, FileLog
                     log_obj = FileLog(arquivo_disparador.parent)
-                    
                     if not log_obj.already_done(arquivo_disparador.name):
                         info = process_tiff(str(arquivo_disparador), emit=agent_log)
-                        log_obj.mark_done(arquivo_disparador.name, f"AUTO-AGENT: {info['width_cm']}x{info['height_cm']} cm")
+                        log_obj.mark_done(arquivo_disparador.name, f"AUTO: {info['width_cm']}x{info['height_cm']} cm")
                         arquivo_disparador.unlink()
-                        agent_log(f"✅ CONF processado com sucesso para: {arquivo_disparador.name}")
+                        agent_log(f"✅ CONF processado: {arquivo_disparador.name}")
                         sucesso = True
                     else:
-                        # Mover arquivo duplicado
                         dest = arquivo_disparador.parent.parent / arquivo_disparador.name
                         if dest.exists():
                             stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                             dest = dest.with_name(f"{dest.stem}_duplicado_{stamp}{dest.suffix}")
                         shutil.move(str(arquivo_disparador), str(dest))
-                        agent_log(f"📦 Arquivo já processado. Movido duplicado: {dest.name}")
+                        agent_log(f"📦 Duplicado movido: {dest.name}")
                         sucesso = True
 
             elif acao == "criar_pastas":
@@ -329,15 +316,14 @@ class MjsAgent:
                 target.mkdir(exist_ok=True)
                 for sub in subpastas:
                     (target / sub).mkdir(parents=True, exist_ok=True)
-                agent_log(f"✅ Pastas diárias criadas com sucesso em: {target}")
+                agent_log(f"✅ Pastas criadas: {target}")
                 sucesso = True
 
             elif acao == "notificar":
                 msg = config.get("mensagem", "Ação concluída pelo agente.")
-                enviar_notificacao("MJS Agent", msg)
+                notify("MJS Agent", msg)
                 sucesso = True
 
-            # ── Se a ação foi concluída com sucesso, verifica os encadeamentos ──
             if sucesso:
                 self._verificar_encadeamentos(nome)
                 
@@ -374,7 +360,7 @@ class MjsAgent:
                 if notificacao:
                     # Remove as aspas do MD se houver
                     notif_clean = notificacao.strip('"').strip("'")
-                    enviar_notificacao("MJS Agent - Encadeamento", notif_clean)
+                    notify("MJS Agent - Encadeamento", notif_clean)
 
     # ── Loop do Agendamento Diário (horario_diario) ───────────────────────────
     def _scheduler_loop(self):
